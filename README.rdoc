@@ -112,7 +112,7 @@ Gives you:
     "points"=>[
       { "title"=>"ga:browser=Internet Explorer", 
         "dimensions"=>[{:browser=>"Internet Explorer"}],
-        "id"=>"http://www.google.com/analytics/feeds/data?ids=ga:41624&amp;ga:browser=Internet%20Explorer&amp;start-date=2009-01-01&amp;end-date=2009-01-31", 
+        "id"=>"http://www.google.com/analytics/feeds/data?ids=ga:12345&amp;ga:browser=Internet%20Explorer&amp;start-date=2009-01-01&amp;end-date=2009-01-31", 
         "metrics"=>[{:pageviews=>53303}], 
         "updated"=>#<DateTime: 212100120000001/86400000,-1/3,2299161>}]}
         
