@@ -1,12 +1,5 @@
 Gattica is a Ruby library for talking to the Google Analytics API.
 
-= Introduction
-There are generally three steps to getting info from the GA API:
-
-1. Authenticate
-2. Get a profile id
-3. Get the data you really want
-
 = Installation
 Install the gattica gem using github as the source:
 
@@ -16,6 +9,13 @@ When you want to require, you just use 'gattica' as the gem name:
 
   require 'rubygems'
   require 'gattica'
+
+= Introduction
+There are generally three steps to getting info from the GA API:
+
+1. Authenticate
+2. Get a profile id
+3. Get the data you really want
 
 = Usage
 This library does all three. A typical transaction will look like this:
