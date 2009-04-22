@@ -1,0 +1,40 @@
+Gattica is a Ruby library for talking to the Google Analytics API.
+
+= Introduction
+There are generally three steps to getting info from the GA API:
+
+1. Authenticate
+2. Get a profile id
+3. Get the data you really want
+
+= Usage
+This library does all three. A typical transaction will look like this:
+
+ gs = Gattica.new('johndoe@google.com','password',123456)
+ results = gs.get({ :start_date => '2008-01-01', 
+                    :end_date => '2008-02-01', 
+                    :dimensions => 'browser', 
+                    :metrics => 'pageviews', 
+                    :sort => 'pageviews'})
+
+So we instantiate a copy of Gattica and pass it a Google Account email address and password.
+The third parameter is the profile_id that we want to access data for.
+
+Then we call +get+ with the parameters we want to shape our data with. In this case we want
+total page views, broken down by browser, from Jan 1 2008 to Feb 1 2008, sorted by page views.
+
+If you don't know the profile_id you want to get data for, call +accounts+
+
+ gs = Gattica.new('johndoe@google.com','password')
+ accounts = gs.accounts
+
+This returns all of the accounts and profiles that the user has access to. Note that if you
+use this method to get profiles, you need to manually set the profile before you can call +get+
+
+ gs.profile_id = 123456
+ results = gs.get({ :start_date => '2008-01-01', 
+                    :end_date => '2008-02-01', 
+                    :dimensions => 'browser', 
+                    :metrics => 'pageviews', 
+                    :sort => 'pageviews'})
+                    

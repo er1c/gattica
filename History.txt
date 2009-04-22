@@ -1,0 +1,5 @@
+== 0.1.1 / 2009-04-22
+  * When outputting as CSV, surround each piece of data with double quotes (appears pretty common for various properties (like Browser name) to contain commas
+
+== 0.1.0 / 2009-03-26
+  * Basic functionality working good. Can't use filters yet.
