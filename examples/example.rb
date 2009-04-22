@@ -1,7 +1,7 @@
 require '../lib/gattica'
 
 # authenticate with the API
-ga = Gattica.new('activecom2@gmail.com','Active123')
+ga = Gattica.new('username@gmail.com','password')
 
 # get the list of accounts you have access to with that username and password
 accounts = ga.accounts
@@ -20,4 +20,4 @@ data = ga.get({ :start_date => '2009-01-01',
                 :sort => ['-pageviews'] })
 
 # write the data out as CSV
-puts data.to_csv(:short)
+puts data.to_csv
