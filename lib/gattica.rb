@@ -63,7 +63,7 @@ require 'gattica/data_point'
 
 module Gattica
   
-  VERSION = '0.1.3'
+  VERSION = '0.1.4'
   LOGGER = Logger.new(STDOUT)
 
   def self.new(*args)
