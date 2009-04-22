@@ -17,6 +17,15 @@ There are generally three steps to getting info from the GA API:
 2. Get a profile id
 3. Get the data you really want
 
+It's a good idea to familiarize yourself with the Google API docs:
+
+  http://code.google.com/apis/analytics/docs/gdata/gdataDeveloperGuide.html
+  
+In particular there are some very specific combinations of Metrics and Dimensions that
+you are restricted to and those are explained in this document:
+
+  http://code.google.com/apis/analytics/docs/gdata/gdataReferenceDimensionsMetrics.html
+
 = Usage
 This library does all three. A typical transaction will look like this:
 
@@ -48,3 +57,45 @@ use this method to get profiles, you need to manually set the profile before you
                     :metrics => 'pageviews', 
                     :sort => 'pageviews'})
                     
+= Output
+When Gattica was originally created it was intended to take the data returned and put it into
+Excel for someone else to crunch through the numbers. Thus, Gattica has great built-in support
+for CSV output. Once you have your data simply:
+
+  results.to_csv
+  
+A couple example rows of what that looks like:
+
+  "id","updated","title","browser","pageviews"
+  "http://www.google.com/analytics/feeds/data?ids=ga:12345&amp;ga:browser=Internet%20Explorer&amp;start-date=2009-01-01&amp;end-date=2009-01-31","2009-01-30T16:00:00-08:00","ga:browser=Internet Explorer","Internet Explorer","53303"
+  "http://www.google.com/analytics/feeds/data?ids=ga:12345&amp;ga:browser=Firefox&amp;start-date=2009-01-01&amp;end-date=2009-01-31","2009-01-30T16:00:00-08:00","ga:browser=Firefox","Firefox","20323"
+  
+Data is comma-separated and double-quote delimited.
+
+You can also just output the results as a string and you'll get the standard inspect syntax:
+
+  { "end_date"=>#<Date: 4909725/2,0,2299161>, 
+    "start_date"=>#<Date: 4909665/2,0,2299161>, 
+    "points"=>[
+      { "title"=>"ga:browser=Internet Explorer", 
+        "dimensions"=>[{:browser=>"Internet Explorer"}],
+        "id"=>"http://www.google.com/analytics/feeds/data?ids=ga:41624&amp;ga:browser=Internet%20Explorer&amp;start-date=2009-01-01&amp;end-date=2009-01-31", 
+        "metrics"=>[{:pageviews=>53303}], 
+        "updated"=>#<DateTime: 212100120000001/86400000,-1/3,2299161>}]}
+        
+= Limitations
+The GA API limits each call to 1000 results per "page." If you want more, you need to tell
+the API what number to begin at and it will return the next 1000. Gattica does not currently
+support this, but it's in the plan for the very next version.
+
+The GA API support filtering, so you can say things like "only show me the pageviews for pages
+whose URL meets the regular expression ^/saf.*?/$". Gattica can pass in filters, but you'll need
+to know how to format them correctly (refer to the GA API), it won't let you do any kind of pretty
+syntax and convert it for you. I plan to add this soon.
+
+= The Future
+A couple of things I have planned:
+
+1. The option to use a custom delimiter for output
+2. Automatically handle paging (the API only returns 1000 results at a time)
+3. Create a nice syntax for filters
