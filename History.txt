@@ -1,3 +1,6 @@
+== 0.1.2 / 2009-04-22
+  * Updated readme and examples, better documentation throughout
+
 == 0.1.1 / 2009-04-22
   * When outputting as CSV, surround each piece of data with double quotes (appears pretty common for various properties (like Browser name) to contain commas
 
