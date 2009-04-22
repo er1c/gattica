@@ -129,8 +129,9 @@ syntax and convert it for you. I plan to add this soon.
 = The Future
 A couple of things I have planned:
 
-1. The option to use a custom delimiter for output
-2. Automatically handle paging (the API only returns 1000 results at a time). Gattica will request
+1. Tests!
+2. The option to use a custom delimiter for output
+3. Automatically handle paging (the API only returns 1000 results at a time). Gattica will request
    one result set, see how many pages there are, then do several calls until all pages are retrieved
    or it hits the limit of the number of results you want and return all that data as one big block.
-3. Create a nice syntax for filters
+4. Create a nice syntax for filters
