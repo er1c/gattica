@@ -17,14 +17,10 @@ There are generally three steps to getting info from the GA API:
 2. Get a profile id
 3. Get the data you really want
 
-It's a good idea to familiarize yourself with the Google API docs:
-
-  http://code.google.com/apis/analytics/docs/gdata/gdataDeveloperGuide.html
+It's a good idea to familiarize yourself with the Google API docs: http://code.google.com/apis/analytics/docs/gdata/gdataDeveloperGuide.html
   
 In particular there are some very specific combinations of Metrics and Dimensions that
-you are restricted to and those are explained in this document:
-
-  http://code.google.com/apis/analytics/docs/gdata/gdataReferenceDimensionsMetrics.html
+you are restricted to and those are explained in this document: http://code.google.com/apis/analytics/docs/gdata/gdataReferenceDimensionsMetrics.html
 
 = Usage
 This library does all three. A typical transaction will look like this:
@@ -59,9 +55,7 @@ use this method to get profiles, you need to manually set the profile before you
                     :sort => '-pageviews'})
                     
 When you put in the names for the dimensions and metrics you want, refer to this doc for the 
-available names:
-
-  http://code.google.com/apis/analytics/docs/gdata/gdataReferenceDimensionsMetrics.html
+available names: http://code.google.com/apis/analytics/docs/gdata/gdataReferenceDimensionsMetrics.html
   
 Note that you do *not* use the 'ga:' prefix when you tell Gattica which ones you want. Gattica
 adds that for you automatically.
