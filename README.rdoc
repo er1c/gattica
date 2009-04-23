@@ -122,9 +122,9 @@ the API what number to begin at and it will return the next 1000. Gattica does n
 support this, but it's in the plan for the very next version.
 
 The GA API support filtering, so you can say things like "only show me the pageviews for pages
-whose URL meets the regular expression ^/saf.*?/$". Gattica can pass in filters, but you'll need
-to know how to format them correctly (refer to the GA API), it won't let you do any kind of pretty
-syntax and convert it for you. I plan to add this soon.
+whose URL meets the regular expression ^/saf.*?/$". Support for filters have begun, but according
+to one report, the DataSet object that returns doesn't parse the results correctly. So for now,
+avoid using filters.
 
 = The Future
 A couple of things I have planned:
