@@ -149,14 +149,15 @@ require 'gattica/data_point'
 
 module Gattica
   
-  VERSION = '0.1.4'
-  LOGGER = Logger.new(STDOUT)
+  VERSION = '0.2.0'
+  # LOGGER = Logger.new(STDOUT)
 
   def self.new(*args)
     Engine.new(*args)
   end
   
-  # The real meat of Gattica, deals with talking to GA, returning and parsing results.
+  # The real meat of Gattica, deals with talking to GA, returning and parsing results. You automatically
+  # get an instance of this when you go Gattica.new()
   
   class Engine
     
@@ -164,33 +165,53 @@ module Gattica
     PORT = 443
     SECURE = true
     DEFAULT_ARGS = { :start_date => nil, :end_date => nil, :dimensions => [], :metrics => [], :filters => [], :sort => [] }
+    DEFAULT_OPTIONS = { :email => nil, :password => nil, :token => nil, :profile_id => nil, :debug => false, :headers => {}, :logger => Logger.new(STDOUT) }
     
-    attr_reader :user, :token
-    attr_accessor :profile_id
+    attr_reader :user
+    attr_accessor :profile_id, :token
     
     # Create a user, and get them authorized.
     # If you're making a web app you're going to want to save the token that's returned by this
-    # method so that you can use it later (without having to re-authenticate the user each time)
+    # method so that you can use it later (Google recommends not re-authenticating the user for each and
+    # every request)
     #
-    #   ga = Gattica.new('johndoe@google.com','password',123456)
+    #   ga = Gattica.new({:email => 'johndoe@google.com', :password => 'password', :profile_id => 123456})
     #   ga.token => 'DW9N00wenl23R0...' (really long string)
+    #
+    # If you already have the token:
+    #
+    #   ga = Gattica.new({:token => '23ohda09hw...', :profile_id => 123456})
     
-    def initialize(email,password,profile_id=0,debug=false)
-      LOGGER.datetime_format = '' if LOGGER.respond_to? 'datetime_format'
+    def initialize(options={})
+      @options = DEFAULT_OPTIONS.merge(options)
+      @logger = @options[:logger]
+      @logger.datetime_format = '' if @logger.respond_to? 'datetime_format'
       
-      @profile_id = profile_id
-      @user_accounts = nil
+      @profile_id = @options[:profile_id]
+      @user_accounts = nil                    # filled in later if the user ever calls Gattica::Engine#accounts
+      @headers = {}                           # headers used for any HTTP requests (Google requires a special 'Authorization' header)
       
       # save an http connection for everyone to use
       @http = Net::HTTP.new(SERVER, PORT)
       @http.use_ssl = SECURE
-      @http.set_debug_output $stdout if debug
+      @http.set_debug_output $stdout if @options[:debug]
       
-      # create a user and authenticate them
-      @user = User.new(email, password)
-      @auth = Auth.new(@http, user, { :source => 'active-gattica-0.1' }, { 'User-Agent' => 'ruby 1.8.6 (2008-03-03 patchlevel 114) [universal-darwin9.0] Net::HTTP' })
-      @token = @auth.tokens[:auth]
-      @headers = { 'Authorization' => "GoogleLogin auth=#{@token}" }
+      # authenticate
+      if @options[:email] && @options[:password]
+        # username and password: authenticate and get a token from Google's ClientLogin
+        @user = User.new(@options[:email], @options[:password])
+        @auth = Auth.new(@http, user, { :source => 'gattica-'+VERSION }, { 'User-Agent' => 'Ruby Net::HTTP' })
+        self.token = @auth.tokens[:auth]
+      elsif @options[:token]
+        # use an existing token (this also sets the headers for any HTTP requests we make)
+        self.token = @options[:token]
+      else
+        # no login or token, that's a problem
+        raise GatticaError::NoLoginOrToken, 'You must provide and username and password, or authentication token'
+      end
+
+      # the user can provide their own additional headers - merge them into the ones that Gattica requires
+      @headers = @headers.merge(@options[:headers])
       
       # TODO: check that the user has access to the specified profile and show an error here rather than wait for Google to respond with a message
     end
@@ -201,7 +222,7 @@ module Gattica
     # don't know the profile_id then use this method to get a list of all them. Then set the profile_id of your
     # instance and you can make regular calls from then on.
     #
-    #   ga = Gattica.new('johndoe@google.com','password')
+    #   ga = Gattica.new({:email => 'johndoe@google.com', :password => 'password'})
     #   ga.get_accounts
     #   # you parse through the accounts to find the profile_id you need
     #   ga.profile_id = 12345678
@@ -227,7 +248,7 @@ module Gattica
     #
     # == Usage
     #
-    #   gs = Gattica.new('johndoe@google.com','password',123456)
+    #   gs = Gattica.new({:email => 'johndoe@google.com', :password => 'password', :profile_id => 123456})
     #   gs.get({ :start_date => '2008-01-01', 
     #            :end_date => '2008-02-01', 
     #            :dimensions => 'browser', 
@@ -260,7 +281,7 @@ module Gattica
     def get(args={})
       args = validate_and_clean(DEFAULT_ARGS.merge(args))
       query_string = build_query_string(args,@profile_id)
-        LOGGER.debug(query_string)
+        @logger.debug(query_string)
       response, data = @http.get("/analytics/feeds/data?#{query_string}", @headers)
       begin
         response.value
@@ -271,7 +292,24 @@ module Gattica
     end
     
     
+    # Since google wants the token to appear in any HTTP call's header, we have to set that header
+    # again any time @token is changed
+    
+    def token=(token)
+      @token = token
+      set_http_headers
+    end
+    
+    
     private
+    
+    # Sets up the HTTP headers that Google expects (this is called any time @token is set either by Gattica
+    # or manually by the user since the header must include the token)
+    def set_http_headers
+      @headers['Authorization'] = "GoogleLogin auth=#{@token}"
+    end
+    
+    
     # Creates a valid query string for GA
     def build_query_string(args,profile)
       output = "ids=ga:#{profile}&start-date=#{args[:start_date]}&end-date=#{args[:end_date]}"
