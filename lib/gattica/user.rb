@@ -6,10 +6,9 @@ module Gattica
   
     include Convertible
   
-    SERVICE = 'analytics'
     attr_accessor :email, :password
   
-    def initialize(email,password,source='')
+    def initialize(email,password)
       @email = email
       @password = password
       validate

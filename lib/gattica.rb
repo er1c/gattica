@@ -34,8 +34,8 @@ module Gattica
     Engine.new(*args)
   end
   
-  # The real meat of Gattica, deals with talking to GA, returning and parsing results. You automatically
-  # get an instance of this when you go Gattica.new()
+  # The real meat of Gattica, deals with talking to GA, returning and parsing results. You actually get 
+  # an instance of this when you go Gattica.new()
   
   class Engine
     
@@ -65,7 +65,7 @@ module Gattica
       
       @profile_id = @options[:profile_id]     # if you don't include the profile_id now, you'll have to set it manually later via Gattica::Engine#profile_id=
       @user_accounts = nil                    # filled in later if the user ever calls Gattica::Engine#accounts
-      @headers = {}                           # headers used for any HTTP requests (Google requires a special 'Authorization' header)
+      @headers = {}.merge(@options[:headers])  # headers used for any HTTP requests (Google requires a special 'Authorization' header which is set any time @token is set)
       
       # save an http connection for everyone to use
       @http = Net::HTTP.new(SERVER, PORT)
@@ -75,16 +75,13 @@ module Gattica
       # authenticate
       if @options[:email] && @options[:password]      # email and password: authenticate and get a token from Google's ClientLogin
         @user = User.new(@options[:email], @options[:password])
-        @auth = Auth.new(@http, user, { :source => 'gattica-'+VERSION }, { 'User-Agent' => 'Ruby Net::HTTP' })
+        @auth = Auth.new(@http, user)
         self.token = @auth.tokens[:auth]
       elsif @options[:token]                          # use an existing token (this also sets the headers for any HTTP requests we make)
         self.token = @options[:token]
       else                                            # no login or token, you can't do anything
         raise GatticaError::NoLoginOrToken, 'You must provide an email and password, or authentication token'
       end
-
-      # the user can provide their own additional headers - merge them into the ones that Gattica requires
-      @headers = @headers.merge(@options[:headers])
       
       # TODO: check that the user has access to the specified profile and show an error here rather than wait for Google to respond with a message
     end

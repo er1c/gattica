@@ -10,18 +10,15 @@ module Gattica
     include Convertible
 
     SCRIPT_NAME = '/accounts/ClientLogin'
-    HEADERS = { 'Content-Type' => 'application/x-www-form-urlencoded' }
-    OPTIONS = { :source => '', :service => 'analytics' }
-  
+    HEADERS = { 'Content-Type' => 'application/x-www-form-urlencoded', 'User-Agent' => 'Ruby Net::HTTP' }   # Google asks that you be nice and provide a user-agent string
+    OPTIONS = { :source => 'gattica-'+VERSION, :service => 'analytics' }                                    # Google asks that you provide the name of your app as a 'source' parameter in your POST
+
     attr_reader :response, :data, :tokens, :token
   
     # Prepare the user info along with options and header
-    def initialize(http, user, options={}, headers={})
-      data = OPTIONS.merge(options)
-      data = data.merge(user.to_h)
-      headers = HEADERS.merge(headers)
-    
-      @response, @data = http.post(SCRIPT_NAME, data.to_query, headers)
+    def initialize(http, user)
+      data = OPTIONS.merge(user.to_h)
+      @response, @data = http.post(SCRIPT_NAME, data.to_query, HEADERS)
       @tokens = parse_tokens(@data)
     end
   

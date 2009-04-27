@@ -1,3 +1,5 @@
+
+
 == 0.2.0 / 2009-04-27
   * Changed initialization format: pass a hash of options rather than individual email, password and profile_id
   * Can initialize with a valid token and use that instead of requiring email/password each time
