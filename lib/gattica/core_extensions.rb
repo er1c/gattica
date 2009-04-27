@@ -14,5 +14,12 @@ class Hash
   def value
     self.values.first if self.length == 1
   end
+  
+  def stringify_keys
+    inject({}) do |options, (key, value)|
+      options[key.to_s] = value
+      options
+    end
+  end
 
 end

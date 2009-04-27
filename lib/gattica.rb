@@ -7,6 +7,7 @@ require 'uri'
 require 'logger'
 require 'rubygems'
 require 'hpricot'
+require 'yaml'
 
 # internal
 require 'gattica/core_extensions'
@@ -73,11 +74,11 @@ module Gattica
       @http.set_debug_output $stdout if @options[:debug]
       
       # authenticate
-      if @options[:email] && @options[:password]      # email and password: authenticate and get a token from Google's ClientLogin
+      if @options[:email] && @options[:password]      # email and password: authenticate, get a token from Google's ClientLogin, save it for later
         @user = User.new(@options[:email], @options[:password])
         @auth = Auth.new(@http, user)
         self.token = @auth.tokens[:auth]
-      elsif @options[:token]                          # use an existing token (this also sets the headers for any HTTP requests we make)
+      elsif @options[:token]                          # use an existing token
         self.token = @options[:token]
       else                                            # no login or token, you can't do anything
         raise GatticaError::NoLoginOrToken, 'You must provide an email and password, or authentication token'
@@ -106,11 +107,7 @@ module Gattica
     def accounts
       # if we haven't retrieved the user's accounts yet, get them now and save them
       if @accts.nil?
-        # TODO: move these calls into their own method so we can encapsulate all the errors in one place
-        response, data = @http.get('/analytics/feeds/accounts/default', @headers)
-        if response.code == '401'
-          raise GatticaError::InvalidToken, 'The token you have provided is invalid or has expired'
-        end
+        data = do_http('/analytics/feeds/accounts/default')
         xml = Hpricot(data)
         @user_accounts = xml.search(:entry).collect { |entry| Account.new(entry) }
       end
@@ -155,23 +152,15 @@ module Gattica
     def get(args={})
       args = validate_and_clean(DEFAULT_ARGS.merge(args))
       query_string = build_query_string(args,@profile_id)
-        @logger.debug(query_string)
-      # TODO: move these calls into their own method so we can encapsulate all the errors in one place
-      response, data = @http.get("/analytics/feeds/data?#{query_string}", @headers)
-      if response.code == '401'
-        raise GatticaError::InvalidToken, 'The token you have provided is invalid or has expired'
-      end
-      begin
-        response.value
-      rescue Net::HTTPServerException => e
-        raise GatticaError::AnalyticsError, data.to_s + " (status code: #{e.message})"
-      end
+        @logger.debug(query_string) if @debug
+      data = do_http("/analytics/feeds/data?#{query_string}")
       return DataSet.new(Hpricot.XML(data))
     end
     
     
     # Since google wants the token to appear in any HTTP call's header, we have to set that header
-    # again any time @token is changed
+    # again any time @token is changed so we override the default writer (note that you need to set
+    # @token with self.token= instead of @token=)
     
     def token=(token)
       @token = token
@@ -180,6 +169,29 @@ module Gattica
     
     
     private
+    
+    
+    # Does the work of making HTTP calls and then going through a suite of tests on the response to make
+    # sure it's valid and not an error
+    
+    def do_http(query_string)
+      response, data = @http.get(query_string, @headers)
+      
+      # error checking
+      if response.code != '200'
+        case response.code
+        when '400'
+          raise GatticaError::AnalyticsError, response.body + " (status code: #{response.code})"
+        when '401'
+          raise GatticaError::InvalidToken, "Your authorization token is invalid or has expired (status code: #{response.code})"
+        else  # some other unknown error
+          raise GatticaError::UnknownAnalyticsError, response.body + " (status code: #{response.code})"
+        end
+      end
+      
+      return data
+    end
+    
     
     # Sets up the HTTP headers that Google expects (this is called any time @token is set either by Gattica
     # or manually by the user since the header must include the token)

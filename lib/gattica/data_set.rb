@@ -49,6 +49,16 @@ module Gattica
       return output
     end
     
+    
+    def to_yaml
+      { 'total_results' => @total_results,
+        'start_index' => @start_index,
+        'items_per_page' => @items_per_page,
+        'start_date' => @start_date,
+        'end_date' => @end_date,
+        'points' => @points}.to_yaml
+    end
+    
   end
   
 end

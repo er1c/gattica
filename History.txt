@@ -1,5 +1,7 @@
-
-
+== 0.2.1 
+  * More robust error checking on HTTP calls
+  * Added to_xml to get raw XML output from Google
+  
 == 0.2.0 / 2009-04-27
   * Changed initialization format: pass a hash of options rather than individual email, password and profile_id
   * Can initialize with a valid token and use that instead of requiring email/password each time

@@ -13,12 +13,20 @@ module Gattica
     HEADERS = { 'Content-Type' => 'application/x-www-form-urlencoded', 'User-Agent' => 'Ruby Net::HTTP' }   # Google asks that you be nice and provide a user-agent string
     OPTIONS = { :source => 'gattica-'+VERSION, :service => 'analytics' }                                    # Google asks that you provide the name of your app as a 'source' parameter in your POST
 
-    attr_reader :response, :data, :tokens, :token
+    attr_reader :tokens
   
-    # Prepare the user info along with options and header
+    # Try to authenticate the user
     def initialize(http, user)
       data = OPTIONS.merge(user.to_h)
       @response, @data = http.post(SCRIPT_NAME, data.to_query, HEADERS)
+      if @response.code != '200'
+        case @response.code
+        when '403'
+          raise GatticaError::CouldNotAuthenticate, 'Your email and/or password is not recognized by the Google ClientLogin system (status code: 403)'
+        else
+          raise GatticaError::UnknownAnalyticsError, response.body + " (status code: #{response.code})"
+        end
+      end
       @tokens = parse_tokens(@data)
     end
   

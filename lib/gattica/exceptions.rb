@@ -17,4 +17,5 @@ module GatticaError
   class MissingEndDate < StandardError; end;
   # errors from Analytics
   class AnalyticsError < StandardError; end;
+  class UnknownAnalyticsError < StandardError; end;
 end

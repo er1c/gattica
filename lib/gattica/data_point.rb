@@ -47,6 +47,15 @@ module Gattica
       return output
     end
     
+    
+    def to_yaml
+      { 'id' => @id,
+        'updated' => @updated,
+        'title' => @title,
+        'dimensions' => @dimensions,
+        'metrics' => @metrics }.to_yaml
+    end
+    
   end
   
 end

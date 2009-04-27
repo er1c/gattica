@@ -24,5 +24,16 @@ module Gattica
       to_h.to_query
     end
     
+    # Return the raw XML (if the object has a @xml instance variable, otherwise convert the object itself to xml)
+    def to_xml
+      if @xml
+        @xml
+      else
+        self.to_xml
+      end
+    end
+    
+    alias to_yml to_yaml
+    
   end
 end
