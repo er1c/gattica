@@ -1,3 +1,10 @@
+== 0.2.0 / 2009-04-27
+  * Changed initialization format: pass a hash of options rather than individual email, password and profile_id
+  * Can initialize with a valid token and use that instead of requiring email/password each time
+  * Can initialize with your own logger object instead of having to use the default (useful if you're using with Rails, initialize with RAILS_DEFAULT_LOGGER)
+  * Show error if token is invalid or expired (Google returns a 401 on any HTTP call)
+  * Started tests
+
 == 0.1.4 / 2009-04-22
   * Another attempt at getting the gem to build on github
 

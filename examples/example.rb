@@ -1,10 +1,10 @@
 require '../lib/gattica'
 
 # authenticate with the API via email/password
-# ga = Gattica.new({:email => 'activecom2@gmail.com', :password => 'Active123'})
+ga = Gattica.new({:email => 'username@gmail.com', :password => 'password'})
 
-# authenticate via a pre-existing token
-ga = Gattica.new({:token => 'DQAAAJYAAACN-JMelka5I0Fs-T6lF53eUSfUooeHgcKc1iEdc0wkDS3w8GaXY7LjuUB_4vmzDB94HpScrULiweW_xQsU8yyUgdInDIX7ZnHm8_o0knf6FWSR90IoAZGsphpqteOjZ3O0NlNt603GgG7ylvGWRSeHl1ybD38nysMsKJR-dj0LYgIyPMvtgXLrqr_20oTTEExYbrDSg5_q84PkoLHUcODm' })
+# or, initialize via a pre-existing token (does not authenticate, but will throw an error on subsequent calls [like ga.accounts] if the token is invalid)
+# ga = Gattica.new({:token => 'DQAAAJYAAACN-JMelka5I0Fs-T6lF53eUSfUooeHgcKc1iEdc0wkDS3w8GaXY7LjuUB_4vmzDB94HpScrULiweW_xQsU8yyUgdInDIX7ZnHm8_o0knf6FWSR90IoAZGsphpqteOjZ3O0NlNt603GgG7ylvGWRSeHl1ybD38nysMsKJR-dj0LYgIyPMvtgXLrqr_20oTTEExYbrDSg5_q84PkoLHUcODZ' })
 
 # get the list of accounts you have access to with that username and password
 accounts = ga.accounts

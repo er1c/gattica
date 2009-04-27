@@ -15,21 +15,23 @@ When you want to require, you just use 'gattica' as the gem name:
   require 'gattica'
 
 = Introduction
+It's a good idea to familiarize yourself with the Google API docs: http://code.google.com/apis/analytics/docs/gdata/gdataDeveloperGuide.html
+  
+In particular there are some very specific combinations of Metrics and Dimensions that
+you are restricted to and those are explained in this document: http://code.google.com/apis/analytics/docs/gdata/gdataReferenceDimensionsMetrics.html
+
+See examples/example.rb for some code that should work automatically if you replace the email/password with your own
+
 There are generally three steps to getting info from the GA API:
 
 1. Authenticate
 2. Get a profile id
 3. Get the data you really want
 
-It's a good idea to familiarize yourself with the Google API docs: http://code.google.com/apis/analytics/docs/gdata/gdataDeveloperGuide.html
-  
-In particular there are some very specific combinations of Metrics and Dimensions that
-you are restricted to and those are explained in this document: http://code.google.com/apis/analytics/docs/gdata/gdataReferenceDimensionsMetrics.html
-
 = Usage
 This library does all three. A typical transaction will look like this:
 
- gs = Gattica.new('johndoe@google.com','password',123456)
+ gs = Gattica.new({:email => 'johndoe@google.com', :password => 'password', profile_id => 123456})
  results = gs.get({ :start_date => '2008-01-01', 
                     :end_date => '2008-02-01', 
                     :dimensions => 'browser', 
@@ -45,7 +47,7 @@ page views.
 
 If you don't know the profile_id you want to get data for, call +accounts+
 
- gs = Gattica.new('johndoe@google.com','password')
+ gs = Gattica.new({:email => 'johndoe@google.com', :password => 'password'})
  accounts = gs.accounts
 
 This returns all of the accounts and profiles that the user has access to. Note that if you
@@ -72,7 +74,35 @@ also pass in single values as arrays too, if you wish):
                      :dimensions => ['browser','browserVersion'], 
                      :metrics => ['pageviews','visits'], 
                      :sort => ['-pageviews']})
-                      
+                     
+== Notes on Authentication
+=== Authentication Token
+Google recommends not re-authenticating each time you do a request against the API. To accomplish
+this you should save the authorization token you receive from Google and use that for future 
+requests:
+
+  ga.token => 'DSasdf94...' (some huge long string)
+  
+You can now initialize Gattica with this token for future requests:
+
+  ga = Gattica.new({:token => 'DSasdf94...'})
+  
+(You enter the full token, of course). I'm not sure how long a token from the Google's ClientLogin
+system remains active, but if/when I do I'll add that to the docs here.
+
+=== Headers
+Google expects a special header in all HTTP requests called 'Authorization'. This contains your
+token:
+
+  Authorization = GoogleLogin auth=DSasdf94...
+
+This header is generated automatically. If you have your own headers you'd like to add, you can 
+pass them in when you initialize:
+
+  ga = Gattica.new({:token => 'DSasdf94...', :headers => {'My-Special-Header':'my_custom_value'}})
+  
+And they'll be sent with every request you make.
+  
 = Output
 When Gattica was originally created it was intended to take the data returned and put it into
 Excel for someone else to crunch through the numbers. Thus, Gattica has great built-in support
