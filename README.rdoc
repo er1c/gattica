@@ -1,7 +1,3 @@
-# TODO: Mention that user can manually set additional headers for HTTP requests
-# TODO: User can pass their own Logger object in when they create an instance of Gattica
-
-
 Gattica is a Ruby library for talking to the Google Analytics API.
 
 = Installation
