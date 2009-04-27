@@ -171,14 +171,13 @@ module Gattica
     attr_accessor :profile_id, :token
     
     # Create a user, and get them authorized.
-    # If you're making a web app you're going to want to save the token that's returned by this
-    # method so that you can use it later (Google recommends not re-authenticating the user for each and
-    # every request)
+    # If you're making a web app you're going to want to save the token that's retrieved by Gattica
+    # so that you can use it later (Google recommends not re-authenticating the user for each and every request)
     #
     #   ga = Gattica.new({:email => 'johndoe@google.com', :password => 'password', :profile_id => 123456})
     #   ga.token => 'DW9N00wenl23R0...' (really long string)
     #
-    # If you already have the token:
+    # Or if you already have the token (because you authenticated previously and now want to reuse that session):
     #
     #   ga = Gattica.new({:token => '23ohda09hw...', :profile_id => 123456})
     
@@ -187,7 +186,7 @@ module Gattica
       @logger = @options[:logger]
       @logger.datetime_format = '' if @logger.respond_to? 'datetime_format'
       
-      @profile_id = @options[:profile_id]
+      @profile_id = @options[:profile_id]     # if you don't include the profile_id now, you'll have to set it manually later via Gattica::Engine#profile_id=
       @user_accounts = nil                    # filled in later if the user ever calls Gattica::Engine#accounts
       @headers = {}                           # headers used for any HTTP requests (Google requires a special 'Authorization' header)
       
@@ -197,17 +196,14 @@ module Gattica
       @http.set_debug_output $stdout if @options[:debug]
       
       # authenticate
-      if @options[:email] && @options[:password]
-        # username and password: authenticate and get a token from Google's ClientLogin
+      if @options[:email] && @options[:password]      # username and password: authenticate and get a token from Google's ClientLogin
         @user = User.new(@options[:email], @options[:password])
         @auth = Auth.new(@http, user, { :source => 'gattica-'+VERSION }, { 'User-Agent' => 'Ruby Net::HTTP' })
         self.token = @auth.tokens[:auth]
-      elsif @options[:token]
-        # use an existing token (this also sets the headers for any HTTP requests we make)
+      elsif @options[:token]                          # use an existing token (this also sets the headers for any HTTP requests we make)
         self.token = @options[:token]
-      else
-        # no login or token, that's a problem
-        raise GatticaError::NoLoginOrToken, 'You must provide and username and password, or authentication token'
+      else                                            # no login or token, you can't do anything
+        raise GatticaError::NoLoginOrToken, 'You must provide an email and password, or authentication token'
       end
 
       # the user can provide their own additional headers - merge them into the ones that Gattica requires

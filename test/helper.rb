@@ -4,7 +4,7 @@ require 'rubygems'
 require 'test/unit'
 require 'mocha'
  
-include Gattica
+# include Gattica
  
 def fixture(name)
   File.read(File.join(File.dirname(__FILE__), 'fixtures', name))

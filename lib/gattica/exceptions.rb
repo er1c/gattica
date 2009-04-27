@@ -4,6 +4,7 @@ module GatticaError
   class InvalidPassword < StandardError; end;
   # authentication errors
   class CouldNotAuthenticate < StandardError; end;
+  class NoLoginOrToken < StandardError; end;
   # profile errors
   class InvalidProfileId < StandardError; end;
   # search errors
