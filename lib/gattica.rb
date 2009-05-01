@@ -26,7 +26,7 @@ require 'gattica/data_point'
 
 module Gattica
   
-  VERSION = '0.3.0'
+  VERSION = '0.3.1'
   
   # Creates a new instance of Gattica::Engine and gets us going. Please see the README for usage docs.
   #
