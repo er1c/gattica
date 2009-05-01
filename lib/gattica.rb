@@ -4,6 +4,7 @@ $:.unshift File.dirname(__FILE__) # for use/testing when no gem is installed
 require 'net/http'
 require 'net/https'
 require 'uri'
+require 'cgi'
 require 'logger'
 require 'rubygems'
 require 'hpricot'
@@ -25,7 +26,7 @@ require 'gattica/data_point'
 
 module Gattica
   
-  VERSION = '0.2.0'
+  VERSION = '0.3.0'
   
   # Creates a new instance of Gattica::Engine and gets us going. Please see the README for usage docs.
   #
@@ -45,6 +46,8 @@ module Gattica
     SECURE = true
     DEFAULT_ARGS = { :start_date => nil, :end_date => nil, :dimensions => [], :metrics => [], :filters => [], :sort => [] }
     DEFAULT_OPTIONS = { :email => nil, :password => nil, :token => nil, :profile_id => nil, :debug => false, :headers => {}, :logger => Logger.new(STDOUT) }
+    FILTER_METRIC_OPERATORS = %w{ == != > < >= <= }
+    FILTER_DIMENSION_OPERATORS = %w{ == != =~ !~ =@ ~@ }
     
     attr_reader :user
     attr_accessor :profile_id, :token
@@ -66,7 +69,7 @@ module Gattica
       
       @profile_id = @options[:profile_id]     # if you don't include the profile_id now, you'll have to set it manually later via Gattica::Engine#profile_id=
       @user_accounts = nil                    # filled in later if the user ever calls Gattica::Engine#accounts
-      @headers = {}.merge(@options[:headers])  # headers used for any HTTP requests (Google requires a special 'Authorization' header which is set any time @token is set)
+      @headers = {}.merge(@options[:headers]) # headers used for any HTTP requests (Google requires a special 'Authorization' header which is set any time @token is set)
       
       # save an http connection for everyone to use
       @http = Net::HTTP.new(SERVER, PORT)
@@ -106,8 +109,8 @@ module Gattica
     
     def accounts
       # if we haven't retrieved the user's accounts yet, get them now and save them
-      if @accts.nil?
-        data = do_http('/analytics/feeds/accounts/default')
+      if @user_accounts.nil?
+        data = do_http_get('/analytics/feeds/accounts/default')
         xml = Hpricot(data)
         @user_accounts = xml.search(:entry).collect { |entry| Account.new(entry) }
       end
@@ -153,7 +156,7 @@ module Gattica
       args = validate_and_clean(DEFAULT_ARGS.merge(args))
       query_string = build_query_string(args,@profile_id)
         @logger.debug(query_string) if @debug
-      data = do_http("/analytics/feeds/data?#{query_string}")
+      data = do_http_get("/analytics/feeds/data?#{query_string}")
       return DataSet.new(Hpricot.XML(data))
     end
     
@@ -174,7 +177,7 @@ module Gattica
     # Does the work of making HTTP calls and then going through a suite of tests on the response to make
     # sure it's valid and not an error
     
-    def do_http(query_string)
+    def do_http_get(query_string)
       response, data = @http.get(query_string, @headers)
       
       # error checking
@@ -218,8 +221,17 @@ module Gattica
           sort[0..0] == '-' ? "-ga:#{sort[1..-1]}" : "ga:#{sort}"  # if the first character is a dash, move it before the ga:
         end.join(',')
       end
+      
+      # TODO: update so that in regular expression filters (=~ and !~), any initial special characters in the regular expression aren't also picked up as part of the operator (doesn't cause a problem, but just feels dirty)
       unless args[:filters].empty?    # filters are a little more complicated because they can have all kinds of modifiers
-        
+        output += '&filters=' + args[:filters].collect do |filter|
+          match, name, operator, expression = *filter.match(/^(\w*)(\W*)(.*)$/)           # splat the resulting Match object to pull out the parts automatically
+          unless name.empty? || operator.empty? || expression.empty?                      # make sure they all contain something
+            "ga:#{name}#{CGI::escape(operator.gsub(/ /,''))}#{CGI::escape(expression)}"   # remove any whitespace from the operator before output
+          else
+            raise GatticaError::InvalidFilter, "The filter '#{filter}' is invalid. Filters should look like 'browser == Firefox' or 'browser==Firefox'"
+          end
+        end.join(';')
       end
       return output
     end
@@ -233,13 +245,26 @@ module Gattica
       raise GatticaError::TooManyDimensions, 'You can only have a maximum of 7 dimensions' if args[:dimensions] && (args[:dimensions].is_a?(Array) && args[:dimensions].length > 7)
       raise GatticaError::TooManyMetrics, 'You can only have a maximum of 10 metrics' if args[:metrics] && (args[:metrics].is_a?(Array) && args[:metrics].length > 10)
       
+      possible = args[:dimensions] + args[:metrics]
+      
       # make sure that the user is only trying to sort fields that they've previously included with dimensions and metrics
       if args[:sort]
-        possible = args[:dimensions] + args[:metrics]
         missing = args[:sort].find_all do |arg|
           !possible.include? arg.gsub(/^-/,'')    # remove possible minuses from any sort params
         end
-        raise GatticaError::InvalidSort, "You are trying to sort by fields that are not in the available dimensions or metrics: #{missing.join(', ')}" unless missing.empty?
+        unless missing.empty?
+          raise GatticaError::InvalidSort, "You are trying to sort by fields that are not in the available dimensions or metrics: #{missing.join(', ')}"
+        end
+      end
+      
+      # make sure that the user is only trying to filter fields that are in dimensions or metrics
+      if args[:filters]
+        missing = args[:filters].find_all do |arg|
+          !possible.include? arg.match(/^\w*/).to_s    # get the name of the filter and compare
+        end
+        unless missing.empty?
+          raise GatticaError::InvalidSort, "You are trying to filter by fields that are not in the available dimensions or metrics: #{missing.join(', ')}"
+        end
       end
       
       return args

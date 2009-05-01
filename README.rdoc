@@ -71,6 +71,19 @@ also pass in single values as arrays too, if you wish):
                      :metrics => ['pageviews','visits'], 
                      :sort => ['-pageviews']})
                      
+== Filters
+Filters can be pretty complex as far as GA is concerned. You can filter on either dimensions or metrics
+or both. And then your filters can be ANDed together or they can ORed together. There are also rules,
+which are not immediately apparent, about what you can filter and how.
+
+By default filters passed to a +get+ are ANDed together. This means that all filters need to match for
+the result to be returned.
+
+  :filter => ['browser == Firefox','pageviews >= 10000']
+  
+This says "return only results where the 'browser' dimension contains the word 'Firefox' and the
+'pageviews' metric is greater than or equal to 10,000.
+
 == Notes on Authentication
 === Authentication Token
 Google recommends not re-authenticating each time you do a request against the API. To accomplish

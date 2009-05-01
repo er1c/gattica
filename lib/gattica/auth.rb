@@ -17,21 +17,29 @@ module Gattica
   
     # Try to authenticate the user
     def initialize(http, user)
-      data = OPTIONS.merge(user.to_h)
-      @response, @data = http.post(SCRIPT_NAME, data.to_query, HEADERS)
-      if @response.code != '200'
-        case @response.code
+      options = OPTIONS.merge(user.to_h)
+      
+      response, data = http.post(SCRIPT_NAME, options.to_query, HEADERS)
+      if response.code != '200'
+        case response.code
         when '403'
           raise GatticaError::CouldNotAuthenticate, 'Your email and/or password is not recognized by the Google ClientLogin system (status code: 403)'
         else
           raise GatticaError::UnknownAnalyticsError, response.body + " (status code: #{response.code})"
         end
       end
-      @tokens = parse_tokens(@data)
+      @tokens = parse_tokens(data)
     end
   
+  
     private
-    # Parse the authentication tokens out of the response
+    
+    # Parse the authentication tokens out of the response and makes them available as a hash
+    #
+    # tokens[:auth] => Google requires this for every request (added to HTTP headers on GET requests)
+    # tokens[:sid]  => Not used
+    # tokens[:lsid] => Not used
+    
     def parse_tokens(data)
       tokens = {}
       data.split("\n").each do |t|

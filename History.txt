@@ -1,3 +1,6 @@
+== 0.3.0
+  * Support for filters (filters are all AND'ed together, no OR yet)
+
 == 0.2.1 
   * More robust error checking on HTTP calls
   * Added to_xml to get raw XML output from Google

@@ -32,14 +32,16 @@ module Gattica
         output = '"id","updated","title",'
       end
       
-      output += @points.first.dimensions.collect do |dimension|
-        "\"#{dimension.key.to_s}\""
-      end.join(',')
-      output += ','
-      output += @points.first.metrics.collect do |metric|
-        "\"#{metric.key.to_s}\""
-      end.join(',') 
-      output += "\n"
+      unless @points.empty?   # if there was at least one result
+        output += @points.first.dimensions.collect do |dimension|
+          "\"#{dimension.key.to_s}\""
+        end.join(',')
+        output += ','
+        output += @points.first.metrics.collect do |metric|
+          "\"#{metric.key.to_s}\""
+        end.join(',') 
+        output += "\n"
+      end
       
       # get the data from each point
       @points.each do |point|
