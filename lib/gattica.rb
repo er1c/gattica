@@ -127,7 +127,8 @@ module Gattica
     #            :end_date => '2008-02-01', 
     #            :dimensions => 'browser', 
     #            :metrics => 'pageviews', 
-    #            :sort => 'pageviews'})
+    #            :sort => 'pageviews',
+    #            :filters => ['browser == Firefox']})
     #
     # == Input
     #
