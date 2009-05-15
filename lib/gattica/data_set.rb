@@ -25,24 +25,21 @@ module Gattica
     def to_csv(format = :long)
       # build the headers
       output = ''
-      
+      columns = []
+
       # only show the nitty gritty details of id, updated_at and title if requested
       case format
       when :long
-        output = '"id","updated","title",'
+        columns << ["id", "updated", "title"]
       end
       
       unless @points.empty?   # if there was at least one result
-        output += @points.first.dimensions.collect do |dimension|
-          "\"#{dimension.key.to_s}\""
-        end.join(',')
-        output += ','
-        output += @points.first.metrics.collect do |metric|
-          "\"#{metric.key.to_s}\""
-        end.join(',') 
-        output += "\n"
+        columns << @points.first.dimensions.map {|d| d.key}
+        columns << @points.first.metrics.map {|m| m.key}
       end
       
+      output = CSV.generate_line(columns) + "\n"
+
       # get the data from each point
       @points.each do |point|
         output += point.to_csv(format) + "\n"
