@@ -1,3 +1,5 @@
+require 'csv'
+
 module Gattica
   
   # Represents a single "row" of data containing any number of dimensions, metrics
@@ -26,24 +28,21 @@ module Gattica
     # Outputs in Comma Seperated Values format
     def to_csv(format = :long)
       output = ''
+      columns = []
       
       # only output
       case format
       when :long
-        output = "\"#{@id}\",\"#{@updated.to_s}\",\"#{@title}\","
+        columns << [@id, @updated, @title]
       end
       
       # output all dimensions
-      output += @dimensions.collect do |dimension|
-        "\"#{dimension.value}\""
-      end.join(',')
-      output += ','
+      columns << @dimensions.map {|d| d.value}
       
       # output all metrics
-      output += @metrics.collect do |metric|
-        "\"#{metric.value}\""
-      end.join(',')
-      
+      columns << @metrics.map {|m| m.value}
+
+      output = CSV.generate_line(columns)      
       return output
     end
     
