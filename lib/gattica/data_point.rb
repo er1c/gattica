@@ -1,4 +1,4 @@
-require 'csv'
+require "csv"
 
 module Gattica
   
@@ -17,10 +17,10 @@ module Gattica
       @updated = DateTime.parse(xml.at('updated').inner_html)
       @title = xml.at('title').inner_html
       @dimensions = xml.search('dxp:dimension').collect do |dimension|
-        { dimension.attributes['name'].split(':').last.to_sym => dimension.attributes['value'].split(':').last }
+        { dimension.attributes['name'].split(':').last.to_sym => dimension.attributes['value'].split(':', 1).last }
       end
       @metrics = xml.search('dxp:metric').collect do |metric|
-        { metric.attributes['name'].split(':').last.to_sym => metric.attributes['value'].split(':').last.to_i }
+        { metric.attributes['name'].split(':').last.to_sym => metric.attributes['value'].split(':', 1).last.to_i }
       end
     end
     
@@ -28,19 +28,19 @@ module Gattica
     # Outputs in Comma Seperated Values format
     def to_csv(format = :long)
       output = ''
-      columns = []
       
+      columns = []
       # only output
       case format
       when :long
-        [@id, @updated, @title].each { |c| columns << c }
+        columns.concat([@id, @updated, @title])
       end
       
       # output all dimensions
-      @dimensions.map {|d| d.value}.each { |c| columns << c }
+      columns.concat(@dimensions.map {|d| d.value})
       
       # output all metrics
-      @metrics.map {|m| m.value}.each { |c| columns << c }
+      columns.concat(@metrics.map {|m| m.value})
 
       output = CSV.generate_line(columns)      
       return output

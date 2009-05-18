@@ -18,27 +18,40 @@ module Gattica
       @points = xml.search(:entry).collect { |entry| DataPoint.new(entry) }
     end
     
-    
-    # output important data to CSV, ignoring all the specific data about this dataset 
-    # (total_results, start_date) and just output the data from the points
-    
-    def to_csv(format = :long)
+    def to_csv_header(format = :long)
       # build the headers
       output = ''
       columns = []
 
       # only show the nitty gritty details of id, updated_at and title if requested
-      case format
+      case format #it would be nice if case statements in ruby worked differently
       when :long
-        ["id", "updated", "title"].each { |c| columns << c }
+        columns.concat(["id", "updated", "title"])
+        unless @points.empty?   # if there was at least one result
+          columns.concat(@points.first.dimensions.map {|d| d.key})
+          columns.concat(@points.first.metrics.map {|m| m.key})
+        end    
+      when :short
+        unless @points.empty?   # if there was at least one result
+          columns.concat(@points.first.dimensions.map {|d| d.key})
+          columns.concat(@points.first.metrics.map {|m| m.key})
+        end    
+      when :noheader
       end
       
-      unless @points.empty?   # if there was at least one result
-        @points.first.dimensions.map {|d| d.key}.each { |c| columns << c }
-        @points.first.metrics.map {|m| m.key}.each { |c| columns << c }
-      end
+      output = CSV.generate_line(columns) + "\n" if (columns.size > 0) 
+
+      return output    
+    end
+    
+    # output important data to CSV, ignoring all the specific data about this dataset 
+    # (total_results, start_date) and just output the data from the points
+    
+    def to_csv(format = :long)
+      output = ''
       
-      output = CSV.generate_line(columns) + "\n"
+      # build the headers
+      output = to_csv_header(format)
 
       # get the data from each point
       @points.each do |point|
