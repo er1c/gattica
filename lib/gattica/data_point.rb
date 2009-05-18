@@ -33,14 +33,14 @@ module Gattica
       # only output
       case format
       when :long
-        columns << [@id, @updated, @title]
+        [@id, @updated, @title].each { |c| columns << c }
       end
       
       # output all dimensions
-      columns << @dimensions.map {|d| d.value}
+      @dimensions.map {|d| d.value}.each { |c| columns << c }
       
       # output all metrics
-      columns << @metrics.map {|m| m.value}
+      @metrics.map {|m| m.value}.each { |c| columns << c }
 
       output = CSV.generate_line(columns)      
       return output

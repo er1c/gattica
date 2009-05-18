@@ -30,12 +30,12 @@ module Gattica
       # only show the nitty gritty details of id, updated_at and title if requested
       case format
       when :long
-        columns << ["id", "updated", "title"]
+        ["id", "updated", "title"].each { |c| columns << c }
       end
       
       unless @points.empty?   # if there was at least one result
-        columns << @points.first.dimensions.map {|d| d.key}
-        columns << @points.first.metrics.map {|m| m.key}
+        @points.first.dimensions.map {|d| d.key}.each { |c| columns << c }
+        @points.first.metrics.map {|m| m.key}.each { |c| columns << c }
       end
       
       output = CSV.generate_line(columns) + "\n"
