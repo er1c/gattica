@@ -1,3 +1,6 @@
+== 0.3.2
+  * er1c updated to use standard Ruby CSV library
+
 == 0.3.0
   * Support for filters (filters are all AND'ed together, no OR yet)
 
