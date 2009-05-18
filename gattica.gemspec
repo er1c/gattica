@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{gattica}
-  s.version = "0.3.2"
+  s.version = "0.3.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Rob Cameron"]
@@ -19,7 +19,6 @@ Gem::Specification.new do |s|
     "README.rdoc",
     "Rakefile",
     "VERSION.yml",
-    "examples/active_example.rb",
     "examples/example.rb",
     "lib/gattica.rb",
     "lib/gattica/account.rb",
@@ -48,7 +47,6 @@ Gem::Specification.new do |s|
     "test/test_auth.rb",
     "test/test_engine.rb",
     "test/test_user.rb",
-    "examples/active_example.rb",
     "examples/example.rb"
   ]
 
