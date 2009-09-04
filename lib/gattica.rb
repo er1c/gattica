@@ -26,7 +26,7 @@ require 'gattica/data_point'
 
 module Gattica
   
-  VERSION = '0.3.1'
+  VERSION = '0.4.0'
   
   # Creates a new instance of Gattica::Engine and gets us going. Please see the README for usage docs.
   #
@@ -44,7 +44,7 @@ module Gattica
     SERVER = 'www.google.com'
     PORT = 443
     SECURE = true
-    DEFAULT_ARGS = { :start_date => nil, :end_date => nil, :dimensions => [], :metrics => [], :filters => [], :sort => [] }
+    DEFAULT_ARGS = { :start_date => nil, :end_date => nil, :dimensions => [], :metrics => [], :filters => [], :sort => [], :start_index => 1, :max_results => 10000, :page => false }
     DEFAULT_OPTIONS = { :email => nil, :password => nil, :token => nil, :profile_id => nil, :debug => false, :headers => {}, :logger => Logger.new(STDOUT) }
     FILTER_METRIC_OPERATORS = %w{ == != > < >= <= }
     FILTER_DIMENSION_OPERATORS = %w{ == != =~ !~ =@ ~@ }
@@ -71,8 +71,18 @@ module Gattica
       @user_accounts = nil                    # filled in later if the user ever calls Gattica::Engine#accounts
       @headers = {}.merge(@options[:headers]) # headers used for any HTTP requests (Google requires a special 'Authorization' header which is set any time @token is set)
       
-      # save an http connection for everyone to use
-      @http = Net::HTTP.new(SERVER, PORT)
+      # save a proxy-aware http connection for everyone to use
+      proxy_host = nil
+      proxy_port = nil
+      proxy_var  = SECURE ? 'https_proxy' : 'http_proxy'
+      [proxy_var, proxy_var.upcase].each do |pxy|
+        if ENV[pxy]
+          uri = URI::parse(ENV[pxy])
+          proxy_host = uri.host
+          proxy_port = uri.port
+        end
+      end
+      @http = Net::HTTP::Proxy(proxy_host,proxy_port).new(SERVER, PORT)
       @http.use_ssl = SECURE
       @http.set_debug_output $stdout if @options[:debug]
       
@@ -116,7 +126,26 @@ module Gattica
       end
       return @user_accounts
     end
-    
+
+    # Performs a Gattica::Engine#get but instead of returning the dataset streams it to the file handle in a CSV format
+    #
+    # == Usage
+    #
+    #   gs = Gattica.new({:email => 'johndoe@google.com', :password => 'password', :profile_id => 123456})
+    #   fh = File.new("file.csv", "w")
+    #   gs.get_to_csv({ :start_date => '2008-01-01', 
+    #            :end_date => '2008-02-01', 
+    #            :dimensions => 'browser', 
+    #            :metrics => 'pageviews', 
+    #            :sort => 'pageviews',
+    #            :filters => ['browser == Firefox']}, fh, :short)
+    #
+    # See Gattica::Engine#get to see details of arguments
+
+    def get_to_csv(args={}, fh = nil, format = :long)   
+      raise GatticaError::InvalidFileType, "Invalid file handle" unless !fh.nil?
+      results(args, fh, :csv, format)
+    end
     
     # This is the method that performs the actual request to get data.
     #
@@ -146,6 +175,9 @@ module Gattica
     # * +metrics+ => an array of GA metrics (without the ga: prefix)
     # * +filter+ => an array of GA dimensions/metrics you want to filter by (without the ga: prefix)
     # * +sort+ => an array of GA dimensions/metrics you want to sort by (without the ga: prefix)
+    # * +page+ => true|false Does the paging to create a single set of all of the data
+    # * +start_index+ => Beginning offset of the query (default 1)
+    # * +max_results+ => How many results to grab (maximum 10,000)
     #
     # == Exceptions
     #
@@ -154,13 +186,44 @@ module Gattica
     # error back from Google Analytics telling you so.
     
     def get(args={})
-      args = validate_and_clean(DEFAULT_ARGS.merge(args))
-      query_string = build_query_string(args,@profile_id)
-        @logger.debug(query_string) if @debug
-      data = do_http_get("/analytics/feeds/data?#{query_string}")
-      return DataSet.new(Hpricot.XML(data))
+      return results(args)
     end
     
+    private
+    
+    def results(args={}, fh=nil, type=nil, format=nil)
+      raise GatticaError::InvalidFileType, "Invalid file type" unless type.nil? ||[:csv,:xml].include?(type)
+      args = validate_and_clean(DEFAULT_ARGS.merge(args))
+
+      header = 0
+      results = nil
+      total_results = args[:max_results]
+      while(args[:start_index] < total_results)
+        query_string = build_query_string(args,@profile_id)
+        @logger.debug("Query String: " + query_string) if @debug
+
+        data = do_http_get("/analytics/feeds/data?#{query_string}")
+        result = DataSet.new(Hpricot.XML(data))
+        
+        #handle returning results
+        results.points.concat(result.points) if !results.nil? && fh.nil?
+        #handle csv
+        
+        if(!fh.nil? && type == :csv && header == 0)
+          fh.write result.to_csv_header(format)
+          header = 1 
+        end
+        
+        fh.write result.to_csv(:noheader) if !fh.nil? && type == :csv
+        fh.flush if !fh.nil?
+        
+        results = result if results.nil?
+        total_results = result.total_results
+        args[:start_index] += args[:max_results]
+        break if !args[:page] # only continue while if we are suppose to page
+      end 
+      return results if fh.nil?
+    end
     
     # Since google wants the token to appear in any HTTP call's header, we have to set that header
     # again any time @token is changed so we override the default writer (note that you need to set
@@ -170,9 +233,6 @@ module Gattica
       @token = token
       set_http_headers
     end
-    
-    
-    private
     
     
     # Does the work of making HTTP calls and then going through a suite of tests on the response to make
@@ -196,6 +256,7 @@ module Gattica
       return data
     end
     
+    private
     
     # Sets up the HTTP headers that Google expects (this is called any time @token is set either by Gattica
     # or manually by the user since the header must include the token)
@@ -206,19 +267,27 @@ module Gattica
     
     # Creates a valid query string for GA
     def build_query_string(args,profile)
-      output = "ids=ga:#{profile}&start-date=#{args[:start_date]}&end-date=#{args[:end_date]}"
-      unless args[:dimensions].empty?
-        output += '&dimensions=' + args[:dimensions].collect do |dimension|
+      query_params  = args.clone
+      ga_start_date = query_params.delete(:start_date)
+      ga_end_date   = query_params.delete(:end_date)
+      ga_dimensions = query_params.delete(:dimensions)
+      ga_metrics    = query_params.delete(:metrics)
+      ga_sort       = query_params.delete(:sort)
+      ga_filters    = query_params.delete(:filters)
+      
+      output = "ids=ga:#{profile}&start-date=#{ga_start_date}&end-date=#{ga_end_date}"
+      unless ga_dimensions.nil? || ga_dimensions.empty?
+        output += '&dimensions=' + ga_dimensions.collect do |dimension|
           "ga:#{dimension}"
         end.join(',')
       end
-      unless args[:metrics].empty?
-        output += '&metrics=' + args[:metrics].collect do |metric|
+      unless ga_metrics.nil? || ga_metrics.empty?
+        output += '&metrics=' + ga_metrics.collect do |metric|
           "ga:#{metric}"
         end.join(',')
       end
-      unless args[:sort].empty?
-        output += '&sort=' + args[:sort].collect do |sort|
+      unless ga_sort.nil? || ga_sort.empty?
+        output += '&sort=' + Array(ga_sort).collect do |sort|
           sort[0..0] == '-' ? "-ga:#{sort[1..-1]}" : "ga:#{sort}"  # if the first character is a dash, move it before the ga:
         end.join(',')
       end
@@ -234,6 +303,9 @@ module Gattica
           end
         end.join(';')
       end
+ 
+      query_params.inject(output) {|m,(key,value)| m << "&#{key}=#{value}"}
+ 
       return output
     end
     
