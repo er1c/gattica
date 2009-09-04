@@ -1,3 +1,6 @@
+== 0.3.4
+  * rumble updated the regex used to pull apart the filters so it didn't get confused when there a filename, for example, started with a /
+
 == 0.3.2
   * er1c updated to use standard Ruby CSV library
 
