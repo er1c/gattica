@@ -11,6 +11,7 @@ begin
     gemspec.homepage = "http://github.com/cannikin/gattica"
     gemspec.description = "Gattica is a Ruby library for extracting data from the Google Analytics API."
     gemspec.authors = ["Rob Cameron"]
+    gemspec.add_dependency('hpricot','>=0.6.164')
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
