@@ -1,4 +1,6 @@
 module GatticaError
+  # usage errors
+  class InvalidFileType < StandardError; end;
   # user errors
   class InvalidEmail < StandardError; end;
   class InvalidPassword < StandardError; end;

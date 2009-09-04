@@ -27,7 +27,7 @@ There are generally three steps to getting info from the GA API:
 = Usage
 This library does all three. A typical transaction will look like this:
 
- gs = Gattica.new({:email => 'johndoe@google.com', :password => 'password', profile_id => 123456})
+ gs = Gattica.new({:email => 'johndoe@google.com', :password => 'password', :profile_id => 123456})
  results = gs.get({ :start_date => '2008-01-01', 
                     :end_date => '2008-02-01', 
                     :dimensions => 'browser', 
@@ -187,6 +187,4 @@ A couple of things I have planned:
 
 1. Tests!
 2. The option to use a custom delimiter for output
-3. Automatically handle paging (the API only returns 1000 results at a time). Gattica will request
-   one result set, see how many pages there are, then do several calls until all pages are retrieved
-   or it hits the limit of the number of results you want and return all that data as one big block.
+
