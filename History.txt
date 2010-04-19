@@ -1,3 +1,9 @@
+== 0.4.2
+  * rpanachi Updates for max_results
+  * Fixed various nil references from multiple people
+  * howcast Updated Email Regex to allow "username+suffix@gmail.com"
+  * scottpersinger Added V2 API Parameter for Segment filter
+
 == 0.4.0
   * er1c added start_index and max_results
   * er1c added paging for all results
