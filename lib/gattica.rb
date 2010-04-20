@@ -66,6 +66,8 @@ module Gattica
     def initialize(options={})
       @options = DEFAULT_OPTIONS.merge(options)
       @logger = @options[:logger]
+      @logger.level = Logger::INFO
+
 
       @profile_id = @options[:profile_id]     # if you don't include the profile_id now, you'll have to set it manually later via Gattica::Engine#profile_id=
       @user_accounts = nil                    # filled in later if the user ever calls Gattica::Engine#accounts
@@ -200,15 +202,16 @@ module Gattica
       total_results = args[:max_results]
       while(args[:start_index] < total_results)
         query_string = build_query_string(args,@profile_id)
-        @logger.debug("Query String: " + query_string) if @debug
+        @logger.info("Start Index: #{args[:start_index]}, Total Results: #{total_results}, Query String: " + query_string) if @options[:debug]
 
         data = do_http_get("/analytics/feeds/data?#{query_string}")
         result = DataSet.new(Hpricot.XML(data))
 
         #handle returning results
         results.points.concat(result.points) if !results.nil? && fh.nil?
-        #handle csv
+        results = result if results.nil?
 
+        #handle csv
         if(!fh.nil? && type == :csv && header == 0)
           fh.write result.to_csv_header(format)
           header = 1
@@ -217,7 +220,7 @@ module Gattica
         fh.write result.to_csv(:noheader) if !fh.nil? && type == :csv
         fh.flush if !fh.nil?
 
-        results = result if results.nil?
+        # Update Loop Counters
         total_results = result.total_results
         args[:start_index] += args[:max_results]
         break if !args[:page] # only continue while if we are suppose to page
@@ -269,6 +272,11 @@ module Gattica
     # Creates a valid query string for GA
     def build_query_string(args,profile)
       query_params  = args.clone
+
+      # Internal Parameters, don't pass to google
+      query_params.delete(:debug)
+      query_params.delete(:page)
+
       ga_start_date = query_params.delete(:start_date)
       ga_end_date   = query_params.delete(:end_date)
       ga_dimensions = query_params.delete(:dimensions)
@@ -276,6 +284,7 @@ module Gattica
       ga_sort       = query_params.delete(:sort)
       ga_filters    = query_params.delete(:filters)
       ga_segment    = query_params.delete(:segment)
+      ga_start_index  = query_params.delete(:start_index) || query_params.delete(:'start-index')
       ga_max_results  = query_params.delete(:max_results) || query_params.delete(:'max-results')
 
       output = "ids=ga:#{profile}&start-date=#{ga_start_date}&end-date=#{ga_end_date}"
@@ -311,6 +320,7 @@ module Gattica
         end.join(';')
       end
 
+      output += "&start-index=#{ga_start_index}" unless ga_start_index.nil? || ga_start_index.to_s.empty?
       output += "&max-results=#{ga_max_results}" unless ga_max_results.nil? || ga_max_results.to_s.empty?
 
       query_params.inject(output) {|m,(key,value)| m << "&#{key}=#{value}"}
